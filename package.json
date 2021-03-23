@@ -1,6 +1,6 @@
 {
   "private": true,
-  "name": "@onlinemictest/guitar",
+  "name": "@onlinemictest/ukulele-tuner",
   "version": "1.0.0",
   "main": "app.js",
   "type": "module",
@@ -13,7 +13,7 @@
     "dev": "npm run watch & npm run serve",
     "postinstall": "npm run install-bin; npm run install-hooks; npm run post-commit",
     "pre-commit": "echo '<!--svg-->' | into.js '<svg[\\s\\S]*</svg>' index.html && git add index.html",
-    "post-commit": "cat guitar.svg | into.js '<!--svg-->' index.html",
+    "post-commit": "cat ukulele.svg | into.js '<!--svg-->' index.html",
     "install-hooks": "for f in `ls .git-hooks`; do ln -sf ../../.git-hooks/${f} .git/hooks/${f}; done",
     "install-bin": "for f in `ls .bin`; do ln -sf ../../.bin/${f} node_modules/.bin/${f}; done",
     "uninstall-hooks": "for f in `ls .git-hooks`; do rm .git/hooks/${f}; done",
@@ -27,12 +27,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/onlinemictest/guitar-tuner.git"
+    "url": "git+https://github.com/onlinemictest/ukulele-tuner.git"
   },
   "license": "AGPL-3.0-or-later",
   "bugs": {
-    "url": "https://github.com/onlinemictest/guitar-tuner/issues"
+    "url": "https://github.com/onlinemictest/ukulele-tuner/issues"
   },
-  "homepage": "https://onlinemictest.com/guitar-tuner",
+  "homepage": "https://onlinemictest.com/ukulele-tuner",
   "description": ""
 }

@@ -24,7 +24,7 @@ import { closestBy, flat, queue } from "./array-fns";
 import { isTruthy, once, set, throttle, timeout } from "./helper-fns";
 import { clamp, round } from "./math-fns";
 
-console.log('Licensed under AGPL-3.0: https://github.com/onlinemictest/guitar-tuner')
+console.log('Licensed under AGPL-3.0: https://github.com/onlinemictest/ukulele-tuner')
 
 const BUFFER_SIZE = 8192; // byte
 const INTERVAL_TIME = 185; // ms
@@ -40,7 +40,7 @@ const NOTES = flat(OCTAVES.map(o => NOTE_STRINGS.map(n => `${n}_${o}`)));
 
 type Note_Octave = `${NoteString}_${Octave}`;
 
-const GUITAR_FREQ = {
+const UKULELE_FREQ = {
   'E_4': 329.63,
   'B_3': 246.94,
   'G_3': 196.00,
@@ -49,9 +49,9 @@ const GUITAR_FREQ = {
   'E_2': 82.41,
 };
 
-type GuitarNote_Octave = keyof typeof GUITAR_FREQ;
+type GuitarNote_Octave = keyof typeof UKULELE_FREQ;
 
-const GUITAR_NOTES = Object.keys(GUITAR_FREQ) as GuitarNote_Octave[];
+const UKULELE_NOTES = Object.keys(UKULELE_FREQ) as GuitarNote_Octave[];
 
 const ANIM_DURATION = 500;
 
@@ -61,7 +61,7 @@ const translate = {
 };
 
 const getClosestGuitarNote = (n?: Note_Octave) => n
-  ? closestBy(GUITAR_NOTES, n, (a, b) => Math.abs(NOTES.indexOf(a) - NOTES.indexOf(b))) as GuitarNote_Octave
+  ? closestBy(UKULELE_NOTES, n, (a, b) => Math.abs(NOTES.indexOf(a) - NOTES.indexOf(b))) as GuitarNote_Octave
   : undefined;
 
 initGetUserMedia();
@@ -108,7 +108,7 @@ const shrinkAnimation: (pauseEl: HTMLElement) => void = 'animate' in Element.pro
 
 // @ts-expect-error
 Aubio().then(({ Pitch }) => {
-  const guitarTuner = document.getElementById('guitar-tuner') as HTMLDivElement | null;
+  const ukuleleTuner = document.getElementById('ukulele-tuner') as HTMLDivElement | null;
   const startEl = document.getElementById('audio-start') as HTMLButtonElement | null;
   const pauseEl = document.getElementById('audio-pause') as HTMLButtonElement | null;
   const tuneUpText = document.getElementById('tune-up-text') as HTMLDivElement | null;
@@ -126,14 +126,14 @@ Aubio().then(({ Pitch }) => {
   tunedJingle.volume = 0.001;
   const JINGLE_VOLUME = 0.5; // set after initial play to get around Safari limitation
 
-  const noteEls = new Map(Object.entries(GUITAR_FREQ)
+  const noteEls = new Map(Object.entries(UKULELE_FREQ)
     .map(([n]) => [n, document.getElementById(n) as unknown as SVGGElement]));
 
-  const fillEls = new Map(Object.entries(GUITAR_FREQ)
+  const fillEls = new Map(Object.entries(UKULELE_FREQ)
     .map(([n]) => [n, document.getElementById(`${n}-fill`) as unknown as SVGGElement]));
 
   if (false
-    || !guitarTuner
+    || !ukuleleTuner
     || !startEl
     || !pauseEl
     || !tuneUpText
@@ -204,7 +204,7 @@ Aubio().then(({ Pitch }) => {
   }, { once: true });
 
   startEl.addEventListener('click', async () => {
-    guitarTuner.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    ukuleleTuner.scrollIntoView({ behavior: 'smooth', block: 'center' });
     startEl.style.display = 'none';
     pauseEl.style.display = 'block';
     shrinkAnimation(pauseEl);
@@ -238,8 +238,8 @@ Aubio().then(({ Pitch }) => {
 
       const noteBuffer: (Note_Octave | undefined)[] = new Array(NOTE_BUFFER_SIZE).fill(undefined);
 
-      let centsBufferMap: Map<GuitarNote_Octave, number[]> = new Map(GUITAR_NOTES.map(n => [n, []]));
-      let jinglePlayedMap: Map<GuitarNote_Octave, boolean> = new Map(GUITAR_NOTES.map(n => [n, false]));
+      let centsBufferMap: Map<GuitarNote_Octave, number[]> = new Map(UKULELE_NOTES.map(n => [n, []]));
+      let jinglePlayedMap: Map<GuitarNote_Octave, boolean> = new Map(UKULELE_NOTES.map(n => [n, false]));
 
       const initialEvent = await once(scriptProcessor, 'audioprocess');
       const initialBuffer = initialEvent.inputBuffer.getChannelData(0);
@@ -299,11 +299,11 @@ Aubio().then(({ Pitch }) => {
             resetable = true;
             softResettable = true;
 
-            const guitarNoteName = currNote;
+            const ukuleleNoteName = currNote;
 
-            const isTooLow = frequency < GUITAR_FREQ[guitarNoteName];
+            const isTooLow = frequency < UKULELE_FREQ[ukuleleNoteName];
 
-            const baseCents = noteName === guitarNoteName
+            const baseCents = noteName === ukuleleNoteName
               ? note.cents
               : isTooLow ? -50 : 50;
 
@@ -311,20 +311,20 @@ Aubio().then(({ Pitch }) => {
             const sensitivity = Math.min(10, Math.round(100 / absCents100));
             const centsRounded = round(baseCents, sensitivity);
 
-            const centsBuffer = centsBufferMap.get(guitarNoteName) ?? [];
-            const jinglePlayed = jinglePlayedMap.get(guitarNoteName) ?? false;
-            if (noteName === guitarNoteName && centsRounded === 0) centsBuffer.push(0);
+            const centsBuffer = centsBufferMap.get(ukuleleNoteName) ?? [];
+            const jinglePlayed = jinglePlayedMap.get(ukuleleNoteName) ?? false;
+            if (noteName === ukuleleNoteName && centsRounded === 0) centsBuffer.push(0);
 
             const tuneRatio = clamp(centsBuffer.length / TUNE_BUFFER_SIZE);
 
             const centsUI = centsRounded * (1 - tuneRatio);
 
-            const isClose = noteName === guitarNoteName && centsUI === 0;
+            const isClose = noteName === ukuleleNoteName && centsUI === 0;
             updateTuneText(isClose, isTooLow);
 
             pluckAString.style.opacity = '0';
             noteSpan.style.opacity = '1';
-            const currNoteString = guitarNoteName.split('_')[0] as NoteString;
+            const currNoteString = ukuleleNoteName.split('_')[0] as NoteString;
             if (prevNoteString !== currNoteString) noteSpan.innerText = currNoteString
             prevNoteString = currNoteString;
 
@@ -338,9 +338,9 @@ Aubio().then(({ Pitch }) => {
             matchCircleL.style.transform = `${translate.Y}(${-centsUI}%)`;
 
             if (tuneRatio === 1 && !jinglePlayed) {
-              set(noteEls.get(guitarNoteName)?.querySelector('path')?.style, 'fill', 'rgb(67,111,142)');
-              set(fillEls.get(guitarNoteName)?.style, 'display', 'block');
-              jinglePlayedMap.set(guitarNoteName, true);
+              set(noteEls.get(ukuleleNoteName)?.querySelector('path')?.style, 'fill', 'rgb(67,111,142)');
+              set(fillEls.get(ukuleleNoteName)?.style, 'display', 'block');
+              jinglePlayedMap.set(ukuleleNoteName, true);
 
               // give animation time to finish
               timeout(ANIM_DURATION).then(() => {
@@ -350,21 +350,21 @@ Aubio().then(({ Pitch }) => {
                 if ([...fillEls.values()].every(el => el.style.display === 'block') && !victory) {
                   victory = true;
                   victoryPause = true;
-                  guitarTuner.classList.add('all-tuned-up');
+                  ukuleleTuner.classList.add('all-tuned-up');
                   noteSpan.style.opacity = '0';
                   allTunedUp.style.opacity = '1';
                   toggleClass(allTunedUp, 'explode');
 
                   // Do a reset
                   currNote = undefined;
-                  jinglePlayedMap = new Map(GUITAR_NOTES.map(n => [n, false]));
-                  centsBufferMap = new Map(GUITAR_NOTES.map(n => [n, []]));
+                  jinglePlayedMap = new Map(UKULELE_NOTES.map(n => [n, false]));
+                  centsBufferMap = new Map(UKULELE_NOTES.map(n => [n, []]));
                   matchCircleL.style.transform = `${translate.Y}(125%)`;
                   updateTuneText(true);
 
                   timeout(VICTORY_DURATION).then(() => {
                     victoryPause = false;
-                    guitarTuner.classList.remove('all-tuned-up');
+                    ukuleleTuner.classList.remove('all-tuned-up');
                     allTunedUp.style.opacity = '0';
                   });
                 }
@@ -381,10 +381,10 @@ Aubio().then(({ Pitch }) => {
           innerCircle.style.transition = 'transform 100ms'
           innerCircle.style.transform = `scale(1)`;
           softResettable = false;
-          jinglePlayedMap = new Map(GUITAR_NOTES.map(n => n === currNote
+          jinglePlayedMap = new Map(UKULELE_NOTES.map(n => n === currNote
             ? [n, jinglePlayedMap.get(n) ?? false]
             : [n, false]));
-          centsBufferMap = new Map(GUITAR_NOTES.map(n => n === currNote
+          centsBufferMap = new Map(UKULELE_NOTES.map(n => n === currNote
             ? [n, centsBufferMap.get(n) ?? []]
             : [n, []]));
         }
@@ -393,8 +393,8 @@ Aubio().then(({ Pitch }) => {
           innerCircle.style.transition = 'transform 100ms'
           innerCircle.style.transform = `scale(1)`;
           softResettable = false;
-          jinglePlayedMap = new Map(GUITAR_NOTES.map(n => [n, false]));
-          centsBufferMap = new Map(GUITAR_NOTES.map(n => [n, []]));
+          jinglePlayedMap = new Map(UKULELE_NOTES.map(n => [n, false]));
+          centsBufferMap = new Map(UKULELE_NOTES.map(n => [n, []]));
         }
       }, INTERVAL_TIME);
     } catch (err) {
