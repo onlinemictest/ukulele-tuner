@@ -18,10 +18,10 @@
 
 import { initGetUserMedia } from "./init-get-user-media";
 import { toggleClass } from "./dom-fns";
-import { getNote, NoteString, Octave } from "./music-fns";
+import { getNote, noteNameToFrequency, NoteString } from "./music-fns";
 import { groupedUntilChanged, takeWhile } from "./iter";
 import { closestBy, flat, queue } from "./array-fns";
-import { isTruthy, once, set, throttle, timeout } from "./helper-fns";
+import { fromEntries, isTruthy, once, set, throttle, timeout } from "./helper-fns";
 import { clamp, round } from "./math-fns";
 
 console.log('Licensed under AGPL-3.0: https://github.com/onlinemictest/ukulele-tuner')
@@ -35,23 +35,20 @@ const NOTE_BUFFER_SIZE = 15;
 const TUNE_BUFFER_SIZE = 5;
 
 const NOTE_STRINGS: NoteString[] = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
-const OCTAVES: Octave[] = [1, 2, 3, 4, 5, 6, 7, 8];
-const NOTES = flat(OCTAVES.map(o => NOTE_STRINGS.map(n => `${n}_${o}`)));
+const NOTES = flat([1, 2, 3, 4, 5, 6, 7, 8].map(o => NOTE_STRINGS.map(n => `${n}_${o}` as Note_Octave)));
 
-type Note_Octave = `${NoteString}_${Octave}`;
+type Note_Octave = `${NoteString}_${number}`;
 
-const UKULELE_FREQ = {
-  'E_4': 329.63,
-  'B_3': 246.94,
-  'G_3': 196.00,
-  'D_3': 146.83,
-  'A_2': 110.00,
-  'E_2': 82.41,
-};
+const TUNINGS = {
+  'gCEA': ['G_3', 'C_4', 'E_4', 'A_4'] as Note_Octave[],
+  'DGBE': ['D_4', 'G_4', 'B_4', 'E_4'] as Note_Octave[],
+} 
 
-type UkuleleNote_Octave = keyof typeof UKULELE_FREQ;
+let tuning: keyof typeof TUNINGS = 'gCEA';
 
-const UKULELE_NOTES = Object.keys(UKULELE_FREQ) as UkuleleNote_Octave[];
+const TUNINGS_FREQ = fromEntries(
+  Object.entries(TUNINGS).map(([t, ns]) => [t, fromEntries(ns.map(n => [n, noteNameToFrequency(n)]))])
+);
 
 const ANIM_DURATION = 500;
 
@@ -60,9 +57,11 @@ const translate = {
   Y: 'translateY',
 };
 
-const getClosestUkuleleNote = (n?: Note_Octave) => n
-  ? closestBy(UKULELE_NOTES, n, (a, b) => Math.abs(NOTES.indexOf(a) - NOTES.indexOf(b))) as UkuleleNote_Octave
+const getClosestNote = (notes: Note_Octave[], n?: Note_Octave) => n
+  ? closestBy(notes, n, (a, b) => Math.abs(NOTES.indexOf(a) - NOTES.indexOf(b))) as Note_Octave
   : undefined;
+
+const noteNameToIndex = (strings: Note_Octave[], n: Note_Octave) => strings.indexOf(n);
 
 initGetUserMedia();
 
@@ -70,7 +69,7 @@ const nonSilentGroup = (g: (Note_Octave | undefined)[]): g is Note_Octave[] =>
   g[0] !== undefined;
 
 const MAGIC_NUMBER = 3;
-const isNoisy = (currNote: UkuleleNote_Octave | undefined) =>
+const isNoisy = (currNote: Note_Octave | undefined) =>
   (g: (Note_Octave | undefined)[]) =>
     g[0] !== currNote || (g[0] === currNote && g.length <= MAGIC_NUMBER);
 
@@ -106,6 +105,8 @@ const shrinkAnimation: (pauseEl: HTMLElement) => void = 'animate' in Element.pro
     })
   : el => toggleClass(el, 'shrink-animation');
 
+const getSVGElementById = (id: string) => document.getElementById(id) as unknown as SVGElement;
+
 // @ts-expect-error
 Aubio().then(({ Pitch }) => {
   const ukuleleTuner = document.getElementById('ukulele-tuner') as HTMLDivElement | null;
@@ -121,16 +122,23 @@ Aubio().then(({ Pitch }) => {
   const matchCircleL = document.getElementById('match-circle-l') as HTMLDivElement | null;
   const matchCircleR = document.getElementById('match-circle-r') as HTMLDivElement | null;
   const innerCircle = document.getElementById('inner-circle') as HTMLDivElement | null;
+  const selectTuning = document.getElementById('select-tuning') as HTMLSelectElement | null;
 
   const tunedJingle = document.getElementById('tuned-jingle') as HTMLAudioElement;
   tunedJingle.volume = 0.001;
   const JINGLE_VOLUME = 0.5; // set after initial play to get around Safari limitation
 
-  const noteEls = new Map(Object.entries(UKULELE_FREQ)
-    .map(([n]) => [n, document.getElementById(n) as unknown as SVGGElement]));
+  const noteElGroups = fromEntries(Object.keys(TUNINGS).map(t => [t, getSVGElementById(t)]));
+  const noteEls = fromEntries(Object.entries(TUNINGS).map(([tuning, notes]) => [
+    tuning,
+    fromEntries(notes.map(n => [
+      n, 
+      getSVGElementById(`${tuning}-${n}`),
+    ])),
+  ]));
+  const fillEls = [1, 2, 3, 4].map(n => getSVGElementById(`S_${n}-fill`));
 
-  const fillEls = new Map(Object.entries(UKULELE_FREQ)
-    .map(([n]) => [n, document.getElementById(`${n}-fill`) as unknown as SVGGElement]));
+  Object.values(noteElGroups).slice(1).forEach(v => { v.style.display = 'none' })
 
   if (false
     || !ukuleleTuner
@@ -146,9 +154,11 @@ Aubio().then(({ Pitch }) => {
     || !matchCircleL
     || !matchCircleR
     || !innerCircle
+    || !selectTuning
     || !tunedJingle
-    || ![...noteEls.values()].every(isTruthy)
-    || ![...fillEls.values()].every(isTruthy)
+    || !Object.values(noteElGroups).every(isTruthy)
+    || !Object.values(noteEls).every(a => Object.values(a).every(isTruthy))
+    || !fillEls.every(isTruthy)
   ) {
     return alert('Expected HTML element missing');
   }
@@ -203,6 +213,13 @@ Aubio().then(({ Pitch }) => {
     tunedJingle.volume = JINGLE_VOLUME;
   }, { once: true });
 
+  selectTuning.addEventListener('change', e => {
+    noteElGroups[tuning].style.display = 'none';
+    tuning = (e.target as HTMLSelectElement).value as keyof typeof TUNINGS;
+    noteElGroups[tuning].style.display = 'block';
+    // TODO: Reset state? Disable while active?
+  });
+
   startEl.addEventListener('click', async () => {
     ukuleleTuner.scrollIntoView({ behavior: 'smooth', block: 'center' });
     startEl.style.display = 'none';
@@ -233,13 +250,13 @@ Aubio().then(({ Pitch }) => {
       let victory = false;
       let victoryPause = false;
       let prevNoteString: NoteString | undefined;
-      let currNote: UkuleleNote_Octave | undefined;
-      let prevNote: UkuleleNote_Octave | undefined;
+      let currNote: Note_Octave | undefined;
+      let prevNote: Note_Octave | undefined;
 
       const noteBuffer: (Note_Octave | undefined)[] = new Array(NOTE_BUFFER_SIZE).fill(undefined);
 
-      let centsBufferMap: Map<UkuleleNote_Octave, number[]> = new Map(UKULELE_NOTES.map(n => [n, []]));
-      let jinglePlayedMap: Map<UkuleleNote_Octave, boolean> = new Map(UKULELE_NOTES.map(n => [n, false]));
+      let centsBufferMap: Map<Note_Octave, number[]> = new Map(TUNINGS[tuning].map(n => [n, []]));
+      let jinglePlayedMap: Map<Note_Octave, boolean> = new Map(TUNINGS[tuning].map(n => [n, false]));
 
       const initialEvent = await once(scriptProcessor, 'audioprocess');
       const initialBuffer = initialEvent.inputBuffer.getChannelData(0);
@@ -268,7 +285,7 @@ Aubio().then(({ Pitch }) => {
         const groupedByNote = [...groupedUntilChanged(noteBuffer)];
         const groupedByNoteNonSilent = groupedByNote.filter(nonSilentGroup)
 
-        currNote = getClosestUkuleleNote(groupedByNoteNonSilent.find(g => g.length > MAGIC_NUMBER)?.[0]);
+        currNote = getClosestNote(TUNINGS[tuning], groupedByNoteNonSilent.find(g => g.length > MAGIC_NUMBER)?.[0]);
 
         // If there has been nothing but noise for the last couple of seconds:
         const isLongNoise = groupedByNoteNonSilent.every(g => g.length <= MAGIC_NUMBER);
@@ -301,7 +318,8 @@ Aubio().then(({ Pitch }) => {
 
             const ukuleleNoteName = currNote;
 
-            const isTooLow = frequency < UKULELE_FREQ[ukuleleNoteName];
+            const refFreq = TUNINGS_FREQ[tuning][ukuleleNoteName];
+            const isTooLow = frequency < refFreq;
 
             const baseCents = noteName === ukuleleNoteName
               ? note.cents
@@ -338,8 +356,8 @@ Aubio().then(({ Pitch }) => {
             matchCircleL.style.transform = `${translate.Y}(${-centsUI}%)`;
 
             if (tuneRatio === 1 && !jinglePlayed) {
-              set(noteEls.get(ukuleleNoteName)?.querySelector('path')?.style, 'fill', 'rgb(67,111,142)');
-              set(fillEls.get(ukuleleNoteName)?.style, 'display', 'block');
+              set(noteEls[tuning][ukuleleNoteName]?.querySelector('path')?.style, 'fill', 'rgb(67,111,142)');
+              set(fillEls[noteNameToIndex(TUNINGS[tuning], ukuleleNoteName)]?.style, 'display', 'block');
               jinglePlayedMap.set(ukuleleNoteName, true);
 
               // give animation time to finish
@@ -347,7 +365,7 @@ Aubio().then(({ Pitch }) => {
                 tunedJingle.play();
                 toggleClass(noteSpan, 'explode');
 
-                if ([...fillEls.values()].every(el => el.style.display === 'block') && !victory) {
+                if (fillEls.every(el => el.style.display === 'block') && !victory) {
                   victory = true;
                   victoryPause = true;
                   ukuleleTuner.classList.add('all-tuned-up');
@@ -357,8 +375,8 @@ Aubio().then(({ Pitch }) => {
 
                   // Do a reset
                   currNote = undefined;
-                  jinglePlayedMap = new Map(UKULELE_NOTES.map(n => [n, false]));
-                  centsBufferMap = new Map(UKULELE_NOTES.map(n => [n, []]));
+                  jinglePlayedMap = new Map(TUNINGS[tuning].map(n => [n, false]));
+                  centsBufferMap = new Map(TUNINGS[tuning].map(n => [n, []]));
                   matchCircleL.style.transform = `${translate.Y}(125%)`;
                   updateTuneText(true);
 
@@ -378,23 +396,23 @@ Aubio().then(({ Pitch }) => {
         prevNote = currNote;
 
         if (softResettable && isNoteChange) {
-          innerCircle.style.transition = 'transform 100ms'
+          innerCircle.style.transition = 'transform 100ms';
           innerCircle.style.transform = `scale(1)`;
           softResettable = false;
-          jinglePlayedMap = new Map(UKULELE_NOTES.map(n => n === currNote
+          jinglePlayedMap = new Map(TUNINGS[tuning].map(n => n === currNote
             ? [n, jinglePlayedMap.get(n) ?? false]
             : [n, false]));
-          centsBufferMap = new Map(UKULELE_NOTES.map(n => n === currNote
+          centsBufferMap = new Map(TUNINGS[tuning].map(n => n === currNote
             ? [n, centsBufferMap.get(n) ?? []]
             : [n, []]));
         }
         else if (softResettable && (isSilence || isShortNoise)) {
           currNote = undefined;
-          innerCircle.style.transition = 'transform 100ms'
+          innerCircle.style.transition = 'transform 100ms';
           innerCircle.style.transform = `scale(1)`;
           softResettable = false;
-          jinglePlayedMap = new Map(UKULELE_NOTES.map(n => [n, false]));
-          centsBufferMap = new Map(UKULELE_NOTES.map(n => [n, []]));
+          jinglePlayedMap = new Map(TUNINGS[tuning].map(n => [n, false]));
+          centsBufferMap = new Map(TUNINGS[tuning].map(n => [n, []]));
         }
       }, INTERVAL_TIME);
     } catch (err) {

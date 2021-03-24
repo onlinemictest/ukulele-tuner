@@ -37,7 +37,7 @@
 
 .omt-select {
   position: absolute;
-  bottom: 0;
+  bottom: 4vw;
   left: 5vw;
   width: calc(100% - 15.5vw);
   z-index: 2;

@@ -35,3 +35,12 @@ export const throttle = (limit: number, fn: (...args: any[]) => any) => {
     }
   }
 };
+
+export function fromEntries<T = any>(entries: Iterable<readonly [PropertyKey, T]>): { [k: string]: T };
+export function fromEntries(entries: Iterable<readonly any[]>): any;
+export function fromEntries(entries: Iterable<readonly any[]>): any {
+  return [...entries].reduce((obj, [key, val]) => {
+    obj[key] = val;
+    return obj;
+  }, {} as any)
+}

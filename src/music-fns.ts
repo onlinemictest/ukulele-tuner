@@ -28,6 +28,13 @@ export function getNote(frequency: number): Note {
   };
 }
 
+export function noteNameToFrequency(note: `${NoteString}_${string}`) {
+  const [name, octaveString] = note.split('_') as [NoteString, string];
+  const octave = Number(octaveString);
+  const noteIndex = (octave + 1) * 12 + NOTE_STRINGS.indexOf(name);
+  return getStandardFrequency(noteIndex);
+}
+
 /**
  * Get musical note from frequency
  */
