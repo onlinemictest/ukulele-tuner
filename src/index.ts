@@ -49,9 +49,9 @@ const UKULELE_FREQ = {
   'E_2': 82.41,
 };
 
-type GuitarNote_Octave = keyof typeof UKULELE_FREQ;
+type UkuleleNote_Octave = keyof typeof UKULELE_FREQ;
 
-const UKULELE_NOTES = Object.keys(UKULELE_FREQ) as GuitarNote_Octave[];
+const UKULELE_NOTES = Object.keys(UKULELE_FREQ) as UkuleleNote_Octave[];
 
 const ANIM_DURATION = 500;
 
@@ -60,8 +60,8 @@ const translate = {
   Y: 'translateY',
 };
 
-const getClosestGuitarNote = (n?: Note_Octave) => n
-  ? closestBy(UKULELE_NOTES, n, (a, b) => Math.abs(NOTES.indexOf(a) - NOTES.indexOf(b))) as GuitarNote_Octave
+const getClosestUkuleleNote = (n?: Note_Octave) => n
+  ? closestBy(UKULELE_NOTES, n, (a, b) => Math.abs(NOTES.indexOf(a) - NOTES.indexOf(b))) as UkuleleNote_Octave
   : undefined;
 
 initGetUserMedia();
@@ -70,7 +70,7 @@ const nonSilentGroup = (g: (Note_Octave | undefined)[]): g is Note_Octave[] =>
   g[0] !== undefined;
 
 const MAGIC_NUMBER = 3;
-const isNoisy = (currNote: GuitarNote_Octave | undefined) =>
+const isNoisy = (currNote: UkuleleNote_Octave | undefined) =>
   (g: (Note_Octave | undefined)[]) =>
     g[0] !== currNote || (g[0] === currNote && g.length <= MAGIC_NUMBER);
 
@@ -233,13 +233,13 @@ Aubio().then(({ Pitch }) => {
       let victory = false;
       let victoryPause = false;
       let prevNoteString: NoteString | undefined;
-      let currNote: GuitarNote_Octave | undefined;
-      let prevNote: GuitarNote_Octave | undefined;
+      let currNote: UkuleleNote_Octave | undefined;
+      let prevNote: UkuleleNote_Octave | undefined;
 
       const noteBuffer: (Note_Octave | undefined)[] = new Array(NOTE_BUFFER_SIZE).fill(undefined);
 
-      let centsBufferMap: Map<GuitarNote_Octave, number[]> = new Map(UKULELE_NOTES.map(n => [n, []]));
-      let jinglePlayedMap: Map<GuitarNote_Octave, boolean> = new Map(UKULELE_NOTES.map(n => [n, false]));
+      let centsBufferMap: Map<UkuleleNote_Octave, number[]> = new Map(UKULELE_NOTES.map(n => [n, []]));
+      let jinglePlayedMap: Map<UkuleleNote_Octave, boolean> = new Map(UKULELE_NOTES.map(n => [n, false]));
 
       const initialEvent = await once(scriptProcessor, 'audioprocess');
       const initialBuffer = initialEvent.inputBuffer.getChannelData(0);
@@ -268,7 +268,7 @@ Aubio().then(({ Pitch }) => {
         const groupedByNote = [...groupedUntilChanged(noteBuffer)];
         const groupedByNoteNonSilent = groupedByNote.filter(nonSilentGroup)
 
-        currNote = getClosestGuitarNote(groupedByNoteNonSilent.find(g => g.length > MAGIC_NUMBER)?.[0]);
+        currNote = getClosestUkuleleNote(groupedByNoteNonSilent.find(g => g.length > MAGIC_NUMBER)?.[0]);
 
         // If there has been nothing but noise for the last couple of seconds:
         const isLongNoise = groupedByNoteNonSilent.every(g => g.length <= MAGIC_NUMBER);
