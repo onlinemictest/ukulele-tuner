@@ -35,7 +35,7 @@
   }
 }
 
-#select-tuning-wrapper {
+.omt-select {
   position: absolute;
   bottom: 0;
   left: 5vw;
@@ -44,7 +44,7 @@
 }
 
 @media only screen and (max-width: 425px) {
-  #select-tuning-wrapper {
+  .omt-select {
     bottom: -62vw;
     width: calc(100% - 10vw);
   }
@@ -363,12 +363,12 @@
 }
 
 @supports (-webkit-appearance: none) or (-moz-appearance: none) or (appearance: none) {
-  #select-tuning {
+  .omt-select select {
     -webkit-appearance: none;
     -moz-appearance: none;
     appearance: none;
   }
-  #select-tuning {
+  .omt-select select {
     width: 100%;
     border-radius: 15px;
     border: 2px solid rgb(67,111,142);
@@ -379,15 +379,15 @@
     font-weight: bolder;
     font-size: 16px;
   }
-  #select-tuning-wrapper {
+  .omt-select {
     display: grid;
     grid-template-areas: 'select';
     align-items: center;
   }
-  #select-tuning, #select-tuning-wrapper::after {
+  .omt-select select, .omt-select::after {
     grid-area: select;
   }
-  #select-tuning-wrapper::after {
+  .omt-select::after {
     content: '';
     width: .8em;
     height: .5em;
@@ -399,13 +399,13 @@
 }
 
 @media only screen and (min-width: 1024px) {
-  #select-tuning {
+  .omt-select select {
     font-size: 18px;
   }
 }
 
 @media only screen and (min-width: 1500px) {
-  #select-tuning {
+  .omt-select select {
     border-width: 3px;
   }
 }
