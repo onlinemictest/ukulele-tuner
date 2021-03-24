@@ -228,7 +228,7 @@
 
 @media only screen and (max-width: 1024px) {
   .border-box {
-    border: .25 solid rgb(67,111,142);
+    border: .25vw solid rgb(67,111,142);
   }
 }
 
