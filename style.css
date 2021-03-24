@@ -1,6 +1,8 @@
 @media only screen and (max-width: 425px) { .xs-dis-block { display: block } }
 @media only screen and (max-width: 425px) { .wid-xxs-100 { width: 100%!important } }
 
+.pos-rel { position: relative }
+
 #ukulele-tuner {
   margin: 30px 0 60px;
 
@@ -30,6 +32,21 @@
 @media only screen and (min-width: 1680px) {
   #ukulele-tuner {
     padding: 0 8.5vw;
+  }
+}
+
+#select-tuning-wrapper {
+  position: absolute;
+  bottom: 0;
+  left: 5vw;
+  width: calc(100% - 15.5vw);
+  z-index: 2;
+}
+
+@media only screen and (max-width: 425px) {
+  #select-tuning-wrapper {
+    bottom: -62vw;
+    width: calc(100% - 10vw);
   }
 }
 
@@ -343,4 +360,52 @@
 @keyframes blob-animation {
   0% { transform : translateY(10vw) scale(0.33) }
   100% { transform: translateY(0) scale(1) }
+}
+
+@supports (-webkit-appearance: none) or (-moz-appearance: none) or (appearance: none) {
+  #select-tuning {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+  }
+  #select-tuning {
+    width: 100%;
+    border-radius: 15px;
+    border: 2px solid rgb(67,111,142);
+    outline: none;
+    color: rgb(67,111,142);
+    padding: 8px 15px;
+    font-family: Raleway;
+    font-weight: bolder;
+    font-size: 16px;
+  }
+  #select-tuning-wrapper {
+    display: grid;
+    grid-template-areas: 'select';
+    align-items: center;
+  }
+  #select-tuning, #select-tuning-wrapper::after {
+    grid-area: select;
+  }
+  #select-tuning-wrapper::after {
+    content: '';
+    width: .8em;
+    height: .5em;
+    background-color: rgb(67,111,142);
+    clip-path: polygon(100% 0%, 0 0%, 50% 100%);
+    justify-self: end;
+    margin-right: 15px;
+  }
+}
+
+@media only screen and (min-width: 1024px) {
+  #select-tuning {
+    font-size: 18px;
+  }
+}
+
+@media only screen and (min-width: 1500px) {
+  #select-tuning {
+    border-width: 3px;
+  }
 }
