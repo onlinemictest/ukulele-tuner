@@ -40,11 +40,13 @@ const NOTES = flat([1, 2, 3, 4, 5, 6, 7, 8].map(o => NOTE_STRINGS.map(n => `${n}
 type Note_Octave = `${NoteString}_${number}`;
 
 const TUNINGS = {
-  'gCEA': ['G_3', 'C_4', 'E_4', 'A_4'] as Note_Octave[],
-  'DGBE': ['D_4', 'G_4', 'B_4', 'E_4'] as Note_Octave[],
+  'gCEA': ['G_4', 'C_4', 'E_4', 'A_4'] as Note_Octave[],
+  'GCEA': ['G_3', 'C_4', 'E_4', 'A_4'] as Note_Octave[],
+  'DGBE': ['D_3', 'G_3', 'B_3', 'E_4'] as Note_Octave[],
 } 
 
 let tuning: keyof typeof TUNINGS = 'gCEA';
+let hardReset = false;
 
 const TUNINGS_FREQ = fromEntries(
   Object.entries(TUNINGS).map(([t, ns]) => [t, fromEntries(ns.map(n => [n, noteNameToFrequency(n)]))])
@@ -141,22 +143,9 @@ Aubio().then(({ Pitch }) => {
   Object.values(noteElGroups).slice(1).forEach(v => { v.style.display = 'none' })
 
   if (false
-    || !ukuleleTuner
-    || !startEl
-    || !pauseEl
-    || !tuneUpText
-    || !tuneDownText
-    || !pressPlay
-    || !pluckAString
-    || !allTunedUp
-    || !errorEl
-    || !noteSpan
-    || !matchCircleL
-    || !matchCircleR
-    || !innerCircle
-    || !selectTuning
-    || !tunedJingle
-    || !Object.values(noteElGroups).every(isTruthy)
+    || !ukuleleTuner || !startEl || !pauseEl || !tuneUpText || !tuneDownText || !pressPlay || !pluckAString
+    || !allTunedUp || !errorEl || !noteSpan || !matchCircleL || !matchCircleR || !innerCircle || !selectTuning
+    || !tunedJingle || !Object.values(noteElGroups).every(isTruthy)
     || !Object.values(noteEls).every(a => Object.values(a).every(isTruthy))
     || !fillEls.every(isTruthy)
   ) {
@@ -217,7 +206,7 @@ Aubio().then(({ Pitch }) => {
     noteElGroups[tuning].style.display = 'none';
     tuning = (e.target as HTMLSelectElement).value as keyof typeof TUNINGS;
     noteElGroups[tuning].style.display = 'block';
-    // TODO: Reset state? Disable while active?
+    hardReset = true;
   });
 
   startEl.addEventListener('click', async () => {
@@ -276,6 +265,20 @@ Aubio().then(({ Pitch }) => {
         // console.time('interval');
 
         if (victoryPause) return;
+
+        if (hardReset) {
+          victory = false;
+          currNote = undefined;
+          innerCircle.style.transition = 'transform 100ms';
+          innerCircle.style.transform = `scale(1)`;
+          jinglePlayedMap = new Map(TUNINGS[tuning].map(n => [n, false]));
+          centsBufferMap = new Map(TUNINGS[tuning].map(n => [n, []]));
+          Object.values(noteEls).forEach(vs => Object.values(vs).forEach(v => 
+            set(v.querySelector('path')?.style, 'fill', '#e25c1b')
+          ));
+          fillEls.forEach(el => el.style.display = 'none');
+          hardReset= false;
+        }
 
         const note = getNote(frequency);
 
@@ -398,21 +401,21 @@ Aubio().then(({ Pitch }) => {
         if (softResettable && isNoteChange) {
           innerCircle.style.transition = 'transform 100ms';
           innerCircle.style.transform = `scale(1)`;
-          softResettable = false;
           jinglePlayedMap = new Map(TUNINGS[tuning].map(n => n === currNote
             ? [n, jinglePlayedMap.get(n) ?? false]
             : [n, false]));
           centsBufferMap = new Map(TUNINGS[tuning].map(n => n === currNote
             ? [n, centsBufferMap.get(n) ?? []]
             : [n, []]));
+          softResettable = false;
         }
         else if (softResettable && (isSilence || isShortNoise)) {
           currNote = undefined;
           innerCircle.style.transition = 'transform 100ms';
           innerCircle.style.transform = `scale(1)`;
-          softResettable = false;
           jinglePlayedMap = new Map(TUNINGS[tuning].map(n => [n, false]));
           centsBufferMap = new Map(TUNINGS[tuning].map(n => [n, []]));
+          softResettable = false;
         }
       }, INTERVAL_TIME);
     } catch (err) {
