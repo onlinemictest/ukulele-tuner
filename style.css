@@ -170,7 +170,8 @@
   }
   #audio-pause {
     left: 50%;
-    margin-bottom: -37.5px;
+    bottom: 0;
+    margin-bottom: -66px;
   }
 }
 
