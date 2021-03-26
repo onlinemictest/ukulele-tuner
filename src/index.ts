@@ -133,14 +133,12 @@ Aubio().then(({ Pitch }) => {
   const noteElGroups = fromEntries(Object.keys(TUNINGS).map(t => [t, getSVGElementById(t)]));
   const noteEls = fromEntries(Object.entries(TUNINGS).map(([tuning, notes]) => [
     tuning,
-    fromEntries(notes.map(n => [
+    fromEntries(notes.map((n, i) => [
       n, 
-      getSVGElementById(`${tuning}-${n}`),
+      getSVGElementById(`${tuning}-S${i + 1}`),
     ])),
   ]));
-  const fillEls = [1, 2, 3, 4].map(n => getSVGElementById(`S_${n}-fill`));
-
-  Object.values(noteElGroups).slice(1).forEach(v => { v.style.display = 'none' })
+  const fillEls = [1, 2, 3, 4].map(n => getSVGElementById(`S${n}-fill`));
 
   if (false
     || !ukuleleTuner || !startEl || !pauseEl || !tuneUpText || !tuneDownText || !pressPlay || !pluckAString
@@ -149,6 +147,7 @@ Aubio().then(({ Pitch }) => {
     || !Object.values(noteEls).every(a => Object.values(a).every(isTruthy))
     || !fillEls.every(isTruthy)
   ) {
+    if (process.env.DEBUG) console.log(noteElGroups, noteEls, fillEls);
     return alert('Expected HTML element missing');
   }
 
@@ -169,6 +168,7 @@ Aubio().then(({ Pitch }) => {
   let stream: MediaStream;
   let intervalId: number;
 
+  noteElGroups[tuning].style.display = 'block';
   matchCircleL.style.transform = `${translate.Y}(125%)`;
 
   const pauseCallback = () => {
@@ -206,6 +206,10 @@ Aubio().then(({ Pitch }) => {
     noteElGroups[tuning].style.display = 'none';
     tuning = (e.target as HTMLSelectElement).value as keyof typeof TUNINGS;
     noteElGroups[tuning].style.display = 'block';
+    Object.values(noteEls).forEach(vs => Object.values(vs).forEach(v => 
+      set(v.querySelector('path')?.style, 'fill', '#e25c1b')
+    ));
+    fillEls.forEach(el => el.style.display = 'none');
     hardReset = true;
   });
 
@@ -273,10 +277,6 @@ Aubio().then(({ Pitch }) => {
           innerCircle.style.transform = `scale(1)`;
           jinglePlayedMap = new Map(TUNINGS[tuning].map(n => [n, false]));
           centsBufferMap = new Map(TUNINGS[tuning].map(n => [n, []]));
-          Object.values(noteEls).forEach(vs => Object.values(vs).forEach(v => 
-            set(v.querySelector('path')?.style, 'fill', '#e25c1b')
-          ));
-          fillEls.forEach(el => el.style.display = 'none');
           hardReset= false;
         }
 

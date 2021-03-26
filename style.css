@@ -50,7 +50,7 @@
   }
 }
 
-[id$="-fill"] { 
+[id$="-fill"], #Tunings > g { 
   display: none;
 }
 
@@ -368,14 +368,12 @@
     -webkit-appearance: none;
     -moz-appearance: none;
     appearance: none;
-  }
-  .omt-select select {
     width: 100%;
     border-radius: 15px;
     border: 2px solid rgb(67,111,142);
     outline: none;
     color: rgb(67,111,142);
-    padding: 8px 15px;
+    padding: 8px 35px 8px 15px;
     font-family: Raleway;
     font-weight: bolder;
     font-size: 16px;
