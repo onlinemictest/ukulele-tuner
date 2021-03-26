@@ -1,10 +1,14 @@
+import { flat } from "./array-fns";
+
 export type NoteString = 'C' | 'C#' | 'D' | 'D#' | 'E' | 'F' | 'F#' | 'G' | 'G#' | 'A' | 'A#' | 'B';
 export type Octave = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
+export type Note_Octave = `${NoteString}_${Octave}`;
 
 export const middleA = 440;
 
 export const SEMI_TONE = 69;
 export const NOTE_STRINGS: NoteString[] = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+export const NOTES = flat([1, 2, 3, 4, 5, 6, 7, 8].map(o => NOTE_STRINGS.map(n => `${n}_${o}` as Note_Octave)));
 
 export interface Note {
   value: number,
