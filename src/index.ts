@@ -18,9 +18,9 @@
 
 import { initGetUserMedia } from "./init-get-user-media";
 import { toggleClass } from "./dom-fns";
-import { getNote, noteNameToFrequency, NoteString } from "./music-fns";
+import { getNote, noteNameToFrequency, NOTES, NoteString, Note_Octave } from "./music-fns";
 import { groupedUntilChanged, takeWhile } from "./iter";
-import { closestBy, flat, queue } from "./array-fns";
+import { closestBy, queue } from "./array-fns";
 import { fromEntries, isTruthy, once, set, throttle, timeout } from "./helper-fns";
 import { clamp, round } from "./math-fns";
 
@@ -33,11 +33,6 @@ const VICTORY_DURATION = 3500; // ms
 // Note buffer sizes
 const NOTE_BUFFER_SIZE = 15;
 const TUNE_BUFFER_SIZE = 5;
-
-const NOTE_STRINGS: NoteString[] = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
-const NOTES = flat([1, 2, 3, 4, 5, 6, 7, 8].map(o => NOTE_STRINGS.map(n => `${n}_${o}` as Note_Octave)));
-
-type Note_Octave = `${NoteString}_${number}`;
 
 const TUNINGS = {
   'gCEA': ['G_4', 'C_4', 'E_4', 'A_4'] as Note_Octave[],
