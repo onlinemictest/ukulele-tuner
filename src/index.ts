@@ -133,12 +133,12 @@ Aubio().then(({ Pitch }) => {
   const noteElGroups = fromEntries(Object.keys(TUNINGS).map(t => [t, getSVGElementById(t)]));
   const noteEls = fromEntries(Object.entries(TUNINGS).map(([tuning, notes]) => [
     tuning,
-    fromEntries(notes.map(n => [
+    fromEntries(notes.map((n, i) => [
       n, 
-      getSVGElementById(`${tuning}-${n}`),
+      getSVGElementById(`${tuning}-S${i + 1}`),
     ])),
   ]));
-  const fillEls = [1, 2, 3, 4].map(n => getSVGElementById(`S_${n}-fill`));
+  const fillEls = [1, 2, 3, 4].map(n => getSVGElementById(`S${n}-fill`));
 
   Object.values(noteElGroups).slice(1).forEach(v => { v.style.display = 'none' })
 
